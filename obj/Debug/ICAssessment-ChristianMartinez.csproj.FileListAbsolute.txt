@@ -1,0 +1,8 @@
+C:\Users\Christian\Desktop\ICAssessment-ChristianMartinez\bin\Debug\ICAssessment-ChristianMartinez.exe.config
+C:\Users\Christian\Desktop\ICAssessment-ChristianMartinez\bin\Debug\ICAssessment-ChristianMartinez.exe
+C:\Users\Christian\Desktop\ICAssessment-ChristianMartinez\bin\Debug\ICAssessment-ChristianMartinez.pdb
+C:\Users\Christian\Desktop\ICAssessment-ChristianMartinez\obj\Debug\ICAssessment-ChristianMartinez.csprojAssemblyReference.cache
+C:\Users\Christian\Desktop\ICAssessment-ChristianMartinez\obj\Debug\ICAssessment-ChristianMartinez.csproj.CoreCompileInputs.cache
+C:\Users\Christian\Desktop\ICAssessment-ChristianMartinez\obj\Debug\ICAssessment-ChristianMartinez.exe
+C:\Users\Christian\Desktop\ICAssessment-ChristianMartinez\obj\Debug\ICAssessment-ChristianMartinez.pdb
+C:\Users\Christian\Desktop\ICAssessment-ChristianMartinez\bin\Debug\database\Billing.mdb
