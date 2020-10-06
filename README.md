@@ -5,6 +5,9 @@ This program will automatically update the connectionString to the database loca
 
 # Opneing Program
 Open project folder and simply open the "ICAssessment-ChristianMartinez.sln" 
+
 Then press "Start without Debugging"
+
 The outfile files BillingReport.txt and BillFile-mmddyyyy will be located in the folder called "_output"
+
 The updated database will be located in the folder called "_database"
