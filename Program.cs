@@ -23,8 +23,9 @@ namespace ICAssessment_ChristianMartinez
         public static List<AddressInformation> AddressInfoList = new List<AddressInformation>();
         private static string GUID = "8203ACC7-2094-43CC-8F7A-B8F19AA9BDA2";//Globally Unique Identifier 
         private static string InvoiceFormat = "8E2FEA69-5D77-4D0F-898E-DFA25677D19E";
-        private static string connectionString = UpdateConnectionString();
+        private static string connectionString = UpdateConnectionString(); //If FAILS: Replace with connectionString from Billing.mdb
 
+        //[Utility Function]: Updates ConnectionString so user doesn't have to. 
         public static string UpdateConnectionString()
         {
             string part1 = @"Provider=Microsoft.Jet.OLEDB.4.0;Data Source=";
@@ -35,13 +36,40 @@ namespace ICAssessment_ChristianMartinez
             return connectionString;
         }
 
-        //[Helper Function]: Parses only Bill Header children only
-        public static void ParseBillHeaderXML()
+        //[Utility Function]: Prints raq XML content to Console Application
+        public static void PrintAllXMLToConsole()
         {
             string path = Path.GetDirectoryName(System.AppDomain.CurrentDomain.BaseDirectory);
             path = Directory.GetParent(Directory.GetParent(path).FullName).FullName + "\\_database\\BillFile.xml"; //Change to local files later. 
+            XmlDocument Xdoc = new XmlDocument();
+            Xdoc.Load(path);
+            Xdoc.Save(Console.Out);
+        }
 
+        //[Utility Function]: Prints all contents inside of InvoiceDataset List 
+        public static void PrintMyParsedData()
+        {
+            for (int i = 0; i < InvoiceDataset.Count; i++)
+            {
+                Console.WriteLine("Bill #: " + i);
+                InvoiceDataset[i].BillHeaderInfo.Print();
+                InvoiceDataset[i].BillInfo.Print();
+                InvoiceDataset[i].AddressInfo.Print();
+                Console.WriteLine("============");
+            }
+        }
+
+        //[Helper Function]: Parses only Bill Header children only in XML
+        public static void ParseBillHeaderXML()
+        {
+            //Fetches path to this folder directory
+            string path = Path.GetDirectoryName(System.AppDomain.CurrentDomain.BaseDirectory);
+            path = Directory.GetParent(Directory.GetParent(path).FullName).FullName + "\\_database\\BillFile.xml";
+
+            //Load XML file to XDocument variable (hence xdoc)
             XDocument xdoc = XDocument.Load(path);
+
+            //Parses XML and store to BillHeader list
             xdoc.Descendants("BILL_HEADER").Select(p => new
             {
                 invoiceno = p.Element("Invoice_No").Value,
@@ -66,12 +94,17 @@ namespace ICAssessment_ChristianMartinez
             });
         }
 
-        //[Helper Function]: Parses only Bill children only
+        //[Helper Function]: Parses only Bill children only in XML
         public static void ParseBillXML()
         {
+            //Fetches path to this folder directory
             string path = Path.GetDirectoryName(System.AppDomain.CurrentDomain.BaseDirectory);
-            path = Directory.GetParent(Directory.GetParent(path).FullName).FullName + "\\_database\\BillFile.xml"; //Change to local files later. 
+            path = Directory.GetParent(Directory.GetParent(path).FullName).FullName + "\\_database\\BillFile.xml";
+
+            //Load XML file to XDocument variable (hence xdoc)
             XDocument xdoc = XDocument.Load(path);
+
+            //Parses XML and store to Bill list
             xdoc.Descendants("Bill").Select(p => new
             {
                 billamount = p.Element("Bill_Amount").Value,
@@ -90,12 +123,17 @@ namespace ICAssessment_ChristianMartinez
             });
         }
 
-        //[Helper Function]: Parses only Address Information children only
+        //[Helper Function]: Parses only Address Information children only in XML
         public static void ParseAddressXML()
         {
+            //Fetches path to this folder directory
             string path = Path.GetDirectoryName(System.AppDomain.CurrentDomain.BaseDirectory);
-            path = Directory.GetParent(Directory.GetParent(path).FullName).FullName + "\\_database\\BillFile.xml"; //Change to local files later. 
+            path = Directory.GetParent(Directory.GetParent(path).FullName).FullName + "\\_database\\BillFile.xml";
+
+            //Load XML file to XDocument variable (hence xdoc)
             XDocument xdoc = XDocument.Load(path);
+
+            //Parses XML and store to AddressInforamtion list
             xdoc.Descendants("Address_Information").Select(p => new
             {
                 mailingaddress1 = p.Element("Mailing_Address_1").Value,
@@ -131,28 +169,29 @@ namespace ICAssessment_ChristianMartinez
         //[Helper Function]: Creates file header for "BillFile-mmddyyyy.rpt"
         public static void BuildFileHeader(TextWriter tw)
         {
+            //Calculate BillAmount total for BuildFileHeader
             double sum = 0;
             for (int i = 0; i < InvoiceDataset.Count; i++)
             {
                 sum += InvoiceDataset[i].BillInfo.BillAmount;
             }
 
+            //Stores values to Dictionary from InvoiceDataset list.
             Dictionary<int, string> header = new Dictionary<int, string> {
-                {1, "FR" }, //?
-                {2, GUID }, //Globally Unique Identifier
-                {3, "Sample UT file" }, //?
-                {4, DateTime.Now.ToString("MM-dd-yyyy") }, //DateTime.Now.ToString("MM-dd-yyyy");
-                {5, InvoiceDataset.Count.ToString() }, //InvoiceDataset.Count;
-                {6, sum.ToString("0.00") } //bill_amount_sum = bill.values[i]
+                {1, "FR" }, //FR
+                {2, GUID }, //GUID
+                {3, "Sample UT file" }, //Sample UT File
+                {4, DateTime.Now.ToString("MM/dd/yyyy") }, //Current Date
+                {5, InvoiceDataset.Count.ToString() }, //Number of Bills in this File
+                {6, sum.ToString("0.00") } //Total Bill Amount
             };
 
-
+            //Write FieldID~FieldValue pair to BillFile
             foreach (KeyValuePair<int, string> pair in header)
             {
                 string kvpformat = $"{pair.Key}~{pair.Value}";
                 tw.Write(kvpformat);
                 if (pair.Key != 6) tw.Write("|");
-                //Console.Write(kvpformat);
             }
             tw.WriteLine();
         }
@@ -163,28 +202,29 @@ namespace ICAssessment_ChristianMartinez
             for (int i = 0; i < InvoiceDataset.Count; i++)
             {
                 Dictionary<string, string> invoice = new Dictionary<string, string>{
-                    {"AA", "CT" }, //?
-                    {"BB", InvoiceDataset[i].BillHeaderInfo.AccountNo }, //InvoiceDataset[i].BillHeader.Account_No;
-                    {"VV", InvoiceDataset[i].BillHeaderInfo.CustomerName }, //InvoiceDataset[i].BillHeader.Customer_Name;
-                    {"CC", InvoiceDataset[i].AddressInfo.MailingAddress1 }, //InvoiceDataset[i].Address_Information.Mailing_Address_1
-                    {"DD", InvoiceDataset[i].AddressInfo.MailingAddress2 }, //InvoiceDataset[i].BillHeader.Account_No
-                    {"EE", InvoiceDataset[i].AddressInfo.City },
-                    {"FF", InvoiceDataset[i].AddressInfo.State },
-                    {"GG", InvoiceDataset[i].AddressInfo.Zip },
+                    {"AA", "CT" },
+                    {"BB", InvoiceDataset[i].BillHeaderInfo.AccountNo }, //Account Number
+                    {"VV", InvoiceDataset[i].BillHeaderInfo.CustomerName }, //Customer Name
+                    {"CC", InvoiceDataset[i].AddressInfo.MailingAddress1 }, //Mailing Address 1
+                    {"DD", InvoiceDataset[i].AddressInfo.MailingAddress2 }, //Mailing Address 2
+                    {"EE", InvoiceDataset[i].AddressInfo.City }, //City
+                    {"FF", InvoiceDataset[i].AddressInfo.State }, //State
+                    {"GG", InvoiceDataset[i].AddressInfo.Zip }, //ZIP
 
-                    {"HH", "IH" }, //?
-                    {"II", "R" }, //?
-                    {"JJ", InvoiceFormat },
-                    {"KK", InvoiceDataset[i].BillHeaderInfo.InvoiceNo },
-                    {"LL", InvoiceDataset[i].BillHeaderInfo.BillDt },
-                    {"MM", InvoiceDataset[i].BillHeaderInfo.DueDt },
-                    {"NN", InvoiceDataset[i].BillInfo.BillAmount.ToString("0.00") },
-                    {"OO", DateTime.Now.AddDays(5).ToString("MM-dd-yyyy") },
-                    {"PP", DateTime.Parse(InvoiceDataset[i].BillHeaderInfo.DueDt).AddDays(-3).ToString("MM-dd-yyyy") },
-                    {"QQ", InvoiceDataset[i].BillInfo.BalanceDue.ToString("0.00") },
-                    {"RR", DateTime.Now.ToString("MM-dd-yyyy") },
-                    {"SS", "SERVICE_ADDRESS" } //?
+                    {"HH", "IH" }, //IH
+                    {"II", "R" }, //R
+                    {"JJ", InvoiceFormat }, //Invoice Format
+                    {"KK", InvoiceDataset[i].BillHeaderInfo.InvoiceNo }, //Invoice Number
+                    {"LL", DateTime.Parse(InvoiceDataset[i].BillHeaderInfo.BillDt).ToString("MM/dd/yyyy") }, //Bill Date
+                    {"MM", DateTime.Parse(InvoiceDataset[i].BillHeaderInfo.DueDt).ToString("MM/dd/yyyy") }, //Bill Due Date
+                    {"NN", InvoiceDataset[i].BillInfo.BillAmount.ToString("0.00") }, //Bill Amount
+                    {"OO", DateTime.Now.AddDays(5).ToString("MM/dd/yyyy") }, //Current Date+5 days = First Notification Date
+                    {"PP", DateTime.Parse(InvoiceDataset[i].BillHeaderInfo.DueDt).AddDays(-3).ToString("MM/dd/yyyy") }, //Bill Due Date - 3 days = Second Notification Date
+                    {"QQ", InvoiceDataset[i].BillInfo.BalanceDue.ToString("0.00") }, //Balance Due
+                    {"RR", DateTime.Now.ToString("MM/dd/yyyy") }, //Customer Added
+                    {"SS", "SERVICE_ADDRESS" } //Service Address
                 };
+
                 //(Math.Truncate(InvoiceDataset[i].BillInfo.BalanceDue * 100) / 100).ToString()
                 foreach (KeyValuePair<string, string> pair in invoice)
                 {
@@ -195,20 +235,19 @@ namespace ICAssessment_ChristianMartinez
                 }
                 tw.WriteLine();
             }
-
-
         }
 
         //[Required Function]: Writes to BillFile by using parsed information from BillFile.xml
         public static void BuildBillFile()
         {
             //Name export file "BillFile-mmddyyyy.rpt"
-            string date = DateTime.Now.ToString("MM-dd-yyyy");
+            string date = DateTime.Now.ToString("MM/dd/yyyy");
             string dateformated = Regex.Replace(date, @"[^0-9]", "");
             string filename = "BillFile-" + dateformated + ".rpt";
 
+            //Change to local files later. 
             string path = Path.GetDirectoryName(System.AppDomain.CurrentDomain.BaseDirectory);
-            path = Directory.GetParent(Directory.GetParent(path).FullName).FullName + "\\_output\\" + filename; //Change to local files later. 
+            path = Directory.GetParent(Directory.GetParent(path).FullName).FullName + "\\_output\\" + filename;
             try
             {
                 // Check if file already exists. If yes, delete it.     
@@ -229,42 +268,24 @@ namespace ICAssessment_ChristianMartinez
             }
         }
 
-        //[Utility Function]: Prints raq XML content to Console Application
-        public static void PrintAllXMLToConsole()
-        {
-            string path = Path.GetDirectoryName(System.AppDomain.CurrentDomain.BaseDirectory);
-            path = Directory.GetParent(Directory.GetParent(path).FullName).FullName + "\\_database\\BillFile.xml"; //Change to local files later. 
-            XmlDocument Xdoc = new XmlDocument();
-            Xdoc.Load(path);
-            Xdoc.Save(Console.Out);
-        }
-
-        //[Utility Function]: Prints all contents inside of InvoiceDataset List 
-        public static void PrintMyParsedData()
-        {
-            for (int i = 0; i < InvoiceDataset.Count; i++)
-            {
-                Console.WriteLine("Bill #: " + i);
-                InvoiceDataset[i].BillHeaderInfo.Print();
-                InvoiceDataset[i].BillInfo.Print();
-                InvoiceDataset[i].AddressInfo.Print();
-                Console.WriteLine("============");
-            }
-        }
-
         //[Helper Function]: Given an array of KVP pairs from "BillFile-mmddyyyy.rpt", parse pair and place them inside of MS Access Database.
         public static void ParseKvpPair(string[] kvpPair)
         {
             Hashtable parsedKVP = new Hashtable();
+            //split FieldID~FieldValue to hashtable
             foreach (var pair in kvpPair)
             {
                 string[] kvpValues = pair.Split('~');
                 parsedKVP.Add(kvpValues[0], kvpValues[1]);
             }
 
+            //Open BillFile and place values inside of MS Access tables
             OleDbConnection con = new OleDbConnection(connectionString);
             OleDbCommand cmd = new OleDbCommand();
             con.Open();
+
+            //If any key contains "AA" then the hashtable contains FieldID values AA-GG
+            //Add HH-SS values to MS Access DB
             if (parsedKVP.ContainsKey("AA")) //AA-GG 
             {
                 cmd.CommandText = "Insert into [Customer](CustomerName, AccountNumber, CustomerAddress, " +
@@ -280,6 +301,8 @@ namespace ICAssessment_ChristianMartinez
                 con.Close();
 
             }
+            //If any key contains "HH" then the hashtable contains FieldID values HH-SS
+            //Add HH-SS values to MS Access DB
             else if (parsedKVP.ContainsKey("HH")) //HH-SS
             {
                 cmd.CommandText = "Insert into [Bills](BillDate, BillNumber, BillAmount, FormatGUID, " +
@@ -303,16 +326,20 @@ namespace ICAssessment_ChristianMartinez
         public static void ImportDataToMDB() //O(n^2) ... Not the best. Can we do better?
         {
             //Name export file "BillFile-mmddyyyy.rpt"
-            string date = DateTime.Now.ToString("MM-dd-yyyy");
+            string date = DateTime.Now.ToString("MM/dd/yyyy");
             string dateformated = Regex.Replace(date, @"[^0-9]", "");
             string filename = "BillFile-" + dateformated + ".rpt";
 
+            //Fetches path to this folder directory
             string path = Path.GetDirectoryName(System.AppDomain.CurrentDomain.BaseDirectory);
-            path = Directory.GetParent(Directory.GetParent(path).FullName).FullName + "\\_output\\" + filename; //Change to local files later. 
+            path = Directory.GetParent(Directory.GetParent(path).FullName).FullName + "\\_output\\" + filename;
+
             try
             {
+                //Open BillFile and read lines
                 using (var streamReader = File.OpenText(path))
                 {
+                    //Grabs all lines in file
                     var lines = streamReader.ReadToEnd().Split("\r\n".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
                     foreach (var line in lines)
                     {
@@ -348,20 +375,23 @@ namespace ICAssessment_ChristianMartinez
             }
         }
 
+        //[Helper Function]: Grabs data from DB and writes it to BillingReport file
         public static void ExtractDataFromDB(TextWriter tw)
         {
-            //OleDbDataReader reader = null;
-
+            //Connects to DB
             using (OleDbConnection connection = new OleDbConnection(connectionString))
             {
-                // Create a command and set its connection  
+                // Create a command and set its connection to Billing.mdb
                 OleDbCommand command = new OleDbCommand("SELECT * FROM Bills", connection);
                 OleDbCommand command2 = new OleDbCommand("SELECT * FROM Customer", connection);
-                List<string> billstable = new List<string>();
-                List<string> customerstable = new List<string>();
-                List<string> customeraddedtable = new List<string>();
+
+                //Create list and vairables to store lines
+                List<string> billList = new List<string>();
+                List<string> customerList = new List<string>();
+                List<string> customerAddedList = new List<string>();
                 string billsLine = "";
                 string customerLine = "";
+
                 // Open the connection and execute the select command.  
                 try
                 {
@@ -370,17 +400,17 @@ namespace ICAssessment_ChristianMartinez
                     {
                         while (reader.Read())
                         {
-                            //Read first line of Bills Table and store to billsLine
+                            //Read line of Bills Table and store to billsLine
                             billsLine = reader["ID"].ToString()
-                                + "," + DateTime.Parse((string)reader["BillDate"].ToString()).ToString("MM-dd-yyyy") //Date showing only MM-dd-yyyy with no timestamp.
+                                + "," + DateTime.Parse((string)reader["BillDate"].ToString()).ToString("MM/dd/yyyy") //Date showing only MM-dd-yyyy with no timestamp.
                                 + "," + reader["BillNumber"].ToString()
                                 + "," + reader["AccountBalance"].ToString()
-                                + "," + DateTime.Parse((string)reader["DueDate"].ToString()).ToString("MM-dd-yyyy")
+                                + "," + DateTime.Parse((string)reader["DueDate"].ToString()).ToString("MM/dd/yyyy")
                                 + "," + reader["BillAmount"].ToString()
                                 + "," + reader["FormatGUID"].ToString();
 
-                            //Add line to billstable
-                            billstable.Add(billsLine);
+                            //Add line to billList
+                            billList.Add(billsLine);
                         }
                     }
 
@@ -388,7 +418,7 @@ namespace ICAssessment_ChristianMartinez
                     {
                         while (reader2.Read())
                         {
-                            //Read first line of Customers Table and store to customersline
+                            //Read line of Customers Table and store to customersline
                             customerLine = reader2["ID"].ToString()
                                 + "," + reader2["CustomerName"].ToString()
                                 + "," + reader2["AccountNumber"].ToString()
@@ -397,20 +427,19 @@ namespace ICAssessment_ChristianMartinez
                                 + "," + reader2["CustomerState"].ToString()
                                 + "," + reader2["CustomerZip"].ToString();
 
-                            //Add line to billstable
-                            customerstable.Add(customerLine);
+                            //Add line to customerList
+                            customerList.Add(customerLine);
 
                             //Add customer added date to another list to get CSV format right
-                            customeraddedtable.Add(DateTime.Parse((string)reader2["DateAdded"].ToString()).ToString("MM-dd-yyyy"));
+                            customerAddedList.Add(DateTime.Parse((string)reader2["DateAdded"].ToString()).ToString("MM/dd/yyyy"));
                         }
                     }
 
-
                     int i = 0;
-                    while (i < customerstable.Count)
+                    while (i < customerList.Count)
                     {
                         //comebine two lines and write to tw.
-                        tw.WriteLine(customerstable[i] + billstable[i] + "," + customeraddedtable[i]);
+                        tw.WriteLine(customerList[i] + billList[i] + "," + customerAddedList[i]);
                         i++;
                     }
                     connection.Close();
@@ -421,27 +450,28 @@ namespace ICAssessment_ChristianMartinez
                 }
             }
         }
+
         //[Required Function]: Creates CSV file to output folder
         public static void ExportDataDBToCSV()
         {
+            //Billing Report header CSV format
             string headerCSV = "Customer.ID,Customer.CustomerName,Customer.AccountNumber," +
                 "Customer.CustomerAddress,Customer.CustomerCity,Customer.CustomerState," +
                 "Customer.CustomerZip,Bills.ID,Bills.BillDate,Bills.BillNumber," +
                 "Bills.AccountBalance,Bills.DueDate,Bills.BillAmount," +
                 "Bills.FormatGUID,Customer.DateAdded";
-            //string path = "C:\\Users\\Christian\\Desktop\\ICAssessment-ChristianMartinez\\_output\\BillingReport.txt"; //Change to local files later. 
 
             string path = Path.GetDirectoryName(System.AppDomain.CurrentDomain.BaseDirectory);
-            path = Directory.GetParent(Directory.GetParent(path).FullName).FullName + "\\_output\\BillingReport.txt"; //Change to local files later. 
+            path = Directory.GetParent(Directory.GetParent(path).FullName).FullName + "\\_output\\BillingReport.txt"; //Fetches path to this folder directory
             try
             {
-                // Check if file already exists. If yes, delete it.     
+                // Check if file already exists. If yes, delete it. Make a new one
                 if (File.Exists(path))
                 {
                     File.Delete(path);
                 }
 
-                //Begin writing billfile
+                //Begin writing BillingReport.txt
                 TextWriter tw = new StreamWriter(path, true);
                 tw.WriteLine(headerCSV);
                 ExtractDataFromDB(tw);
@@ -466,7 +496,7 @@ namespace ICAssessment_ChristianMartinez
             ImportDataToMDB();
 
             //Export data from Billing.mdb and import data to CSV
-            //ExportDataDBToCSV();
+            ExportDataDBToCSV();
 
             //[Helpder function] Displays parsed data to Console App
             //PrintMyParsedData();
